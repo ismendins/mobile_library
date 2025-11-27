@@ -196,11 +196,11 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Alugar"
-                    android:textColor="@color/green"
+                    android:textColor="@color/white"
                     android:textStyle="bold"
                     android:textSize="14sp"
                     android:padding="4dp"
-                    android:layout_marginStart="8dp"
+                    android:layout_gravity="end"
                     android:clickable="true"
                     android:focusable="true"
                     android:foreground="?attr/selectableItemBackground" />
@@ -255,7 +255,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="★★★★★"
-                        android:textColor="@color/green" />
+                        android:textColor="@color/gold_metallic" />
 
                     <TextView
                         android:id="@+id/tvComentarioUsuario"
@@ -279,13 +279,13 @@
                 android:id="@+id/btnAvaliarLivro"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
+                android:layout_gravity="end"
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackground"
                 android:padding="4dp"
                 android:text="Avaliar Livro"
-                android:textColor="@color/green"
+                android:textColor="@color/white"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
