@@ -93,12 +93,14 @@
             android:id="@+id/btnEnviar"
             android:layout_width="48dp"
             android:layout_height="48dp"
+            android:layout_margin="8dp"
             android:layout_marginStart="8dp"
+            android:adjustViewBounds="false"
             android:background="@drawable/shape_send_button"
             android:backgroundTint="@color/blue"
+            android:contentDescription="@string/content_send"
             android:src="@drawable/ic_send_24"
-            android:tint="@android:color/white"
-            android:contentDescription="@string/content_send" />
+            android:tint="@android:color/white" />
 
     </LinearLayout>
 

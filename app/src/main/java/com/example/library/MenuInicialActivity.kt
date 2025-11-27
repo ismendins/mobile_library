@@ -66,8 +66,8 @@ class MenuInicialActivity : AppCompatActivity() {
         }
 
         itemAcessibilidade.setOnClickListener {
-            Toast.makeText(this, "Acessibilidade (em breve)", Toast.LENGTH_SHORT).show()
             closeDrawer()
+            startActivity(Intent(this, AcessibilidadeActivity::class.java))
         }
 
         itemMenuInicial.setOnClickListener {
