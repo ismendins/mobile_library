@@ -1,7 +1,10 @@
 <resources>
     <string name="app_name">Library</string>
     <string name="menu">Menu</string>
-    <string name="eventos">eventos</string>
+    <string name="eventos">Eventos</string>
     <string name="voltar">voltar</string>
+    <string name="titulo_eventos_diarios">EVENTOS DIÁRIOS</string>
+    <string name="adicionar_evento">Adicionar evento</string>
+    <string name="visualizar_detalhes_do_evento">Visualizar detalhes do evento</string>
 
 </resources>

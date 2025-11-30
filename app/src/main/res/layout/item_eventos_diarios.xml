@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    xmlns:tools="http://schemas.android.com/tools"
     android:orientation="horizontal"
-    android:padding="8dp"
+    android:padding="12dp"
     android:gravity="center_vertical"
-    android:background="?attr/selectableItemBackground">
+    android:background="#FFFFFF">
 
     <LinearLayout
         android:layout_width="0dp"
@@ -20,35 +19,76 @@
             android:id="@+id/textView1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/nome_do_evento"
-            android:textStyle="bold"
             android:textColor="#000"
             android:textSize="16sp"
-            tools:text="Show da Banda X" />
+            android:textStyle="bold"/>
 
-        <TextView
-            android:id="@+id/textView2"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="#333"
-            android:textSize="14sp"
-            tools:text="Local: Teatro Municipal" />
+            android:orientation="horizontal"
+            android:layout_marginTop="6dp">
 
-        <TextView
-            android:id="@+id/textView3"
+            <ImageView
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:src="@drawable/clock_outline"
+                app:tint="#777"/>
+
+            <TextView
+                android:id="@+id/tvHorarioEvento"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="12dp"
+                android:textColor="#777"
+                android:textSize="12sp"/>
+
+            <ImageView
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/map_marker_outline"
+                app:tint="#777"/>
+
+            <TextView
+                android:id="@+id/tvLocalEvento"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:textColor="#777"
+                android:textSize="12sp"/>
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="#555"
-            android:textSize="13sp"
-            tools:text="20:00h" />
+            android:orientation="horizontal"
+            android:layout_marginTop="6dp">
+
+            <ImageView
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/group_outline"
+                app:tint="#777"/>
+
+            <TextView
+                android:id="@+id/tvConvidadosEvento"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:textColor="#777"
+                android:textSize="12sp"/>
+        </LinearLayout>
+
     </LinearLayout>
 
-    <!-- 🔸 Setinha para ir aos detalhes -->
     <ImageView
         android:id="@+id/iconeSeta"
         android:layout_width="24dp"
         android:layout_height="24dp"
-        android:src="@drawable/seta_direita_chevron"
-        android:contentDescription="@string/ver_detalhes"
+        android:contentDescription="@string/visualizar_detalhes_do_evento"
+        android:src="@drawable/chevron_right"
         app:tint="#000" />
 </LinearLayout>
