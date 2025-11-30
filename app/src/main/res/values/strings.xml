@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">Library</string>
     <string name="menu">Menu</string>
+    <string name="eventos">eventos</string>
+    <string name="voltar">voltar</string>
 
 </resources>
