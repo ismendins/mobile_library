@@ -26,8 +26,9 @@ class AprovacoesAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val aprovacao = listaAprovacoes[position]
+        val periodo = "${aprovacao.data_inicio} a ${aprovacao.data_fim}"
         holder.tvDescricao.text =
-            "${aprovacao.usuario} está solicitando a reserva do livro “${aprovacao.livro}” para o período de ${aprovacao.periodo}."
+            "${aprovacao.usuario} está solicitando a reserva do livro “${aprovacao.livro}” para o período de ${periodo}."
 
         holder.btnAprovar.setOnClickListener {
             onItemClick(aprovacao)

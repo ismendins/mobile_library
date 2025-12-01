@@ -88,7 +88,7 @@
         android:id="@+id/iconeSeta"
         android:layout_width="24dp"
         android:layout_height="24dp"
-        android:contentDescription="@string/visualizar_detalhes_do_evento"
+        android:contentDescription="Visualizar detalhes"
         android:src="@drawable/chevron_right"
         app:tint="#000" />
 </LinearLayout>

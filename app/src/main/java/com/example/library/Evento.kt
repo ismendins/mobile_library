@@ -1,13 +1,11 @@
 package com.example.library
 
-import kotlinx.serialization.Serializable
-
-@Serializable
 data class Evento(
-    val id: Int? = null,
-    val titulo: String = "",
-    val descricao: String = "",
-    val data: String = "", // YYYY-MM-DD
-    val imagem: String = "" // URL pública do Supabase Storage
+    val id: Int,
+    val nome: String,
+    val tipo: String,
+    val local: String,
+    val data_hora: String,
+    val imagem: String
 )
 

@@ -1,5 +1,8 @@
 package com.example.library.data.supabase
 
+import com.example.library.AprovacaoEmprestimo
+import com.example.library.Convidado
+import com.example.library.Evento
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -39,4 +42,40 @@ interface SupabaseApi {
         @Header("Authorization")
         bearer: String
     ): Response<List<Usuario>>
+
+    @Headers("Prefer: return=representation")
+    @POST("eventos")
+    suspend fun registrarEvento(
+        @Body novoEvento: EventoInsert,
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") bearer: String
+    ): Response<List<Evento>>
+
+
+    // Inserir convidado
+    @Headers("Prefer: return=representation")
+    @POST("convidados")
+    suspend fun registrarConvidado(
+        @Body novoConvidado: ConvidadoInsert,
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") bearer: String
+    ): Response<List<Convidado>>
+
+    // SupabaseApi.kt
+    @GET("eventos")
+    suspend fun listarEventos(
+        @Query("select") select: String = "*",
+        @Query("data") dataFilter: String,      // eq.2025-11-01
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") bearer: String
+    ): Response<List<Evento>>
+
+    @GET("rest/v1/reservas?status=eq.Pendente")
+    fun listarAprovacoes(
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") bearer: String
+    ): Call<List<AprovacaoEmprestimo>>
+
+
+
 }

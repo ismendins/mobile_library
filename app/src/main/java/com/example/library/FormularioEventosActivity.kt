@@ -1,24 +1,21 @@
 package com.example.library
 
-import android.app.DatePickerDialog
-import android.app.TimePickerDialog
 import android.net.Uri
-import android.net.http.HttpResponseCache.install
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.cardview.widget.CardView
+import androidx.lifecycle.lifecycleScope
+import com.example.library.data.supabase.SupabaseClient
+import com.example.library.data.supabase.SupabaseConfig
+import com.example.library.data.supabase.EventoInsert
+import com.example.library.data.supabase.ConvidadoInsert
 import com.google.android.material.snackbar.Snackbar
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.createSupabaseClient
-import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.storage.storage
-import java.util.Calendar
-import java.util.UUID
+import kotlinx.coroutines.launch
+import java.util.*
 
 class FormularioEventosActivity : AppCompatActivity() {
-
-    private lateinit var supabase: SupabaseClient
 
     private lateinit var etNome: EditText
     private lateinit var etLocal: EditText
@@ -39,20 +36,7 @@ class FormularioEventosActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_formulario_evento)
 
-        // -----------------------------------------
-        // Inicializar Supabase
-        // -----------------------------------------
-        supabase = createSupabaseClient(
-            supabaseUrl = "SUPABASE_URL",
-            supabaseKey = "SUPABASE_ANON_KEY"
-        ) {
-            install(io.github.jan.supabase.postgrest.Postgrest)
-            install(io.github.jan.supabase.storage.Storage)
-        }
-
-        // -----------------------------------------
-        // Vincular views
-        // -----------------------------------------
+        // Inicializar views
         etNome = findViewById(R.id.etNome)
         etLocal = findViewById(R.id.etLocal)
         etDataHora = findViewById(R.id.etDataHora)
@@ -65,53 +49,32 @@ class FormularioEventosActivity : AppCompatActivity() {
         layoutPlaceholder = findViewById(R.id.layoutPlaceholder)
         btnCriarEvento = findViewById(R.id.btnCriarEvento)
 
-        // -----------------------------------------
         // Spinner de tipos
-        // -----------------------------------------
-        val tipos = listOf("Palestra", "Seminário", "Roda de Conversa", "Lançamento", "Outro")
+        val tipos: List<String> = listOf("Palestra", "Seminário", "Roda de Conversa", "Lançamento", "Outro")
         spinnerTipo.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, tipos)
 
-        // -----------------------------------------
-        // DateTime Picker
-        // -----------------------------------------
         etDataHora.setOnClickListener { abrirDateTimePicker() }
 
-        // -----------------------------------------
-        // Checkbox → mostrar campo convidados
-        // -----------------------------------------
         checkboxConvidados.setOnCheckedChangeListener { _, checked ->
             containerConvidados.visibility = if (checked) LinearLayout.VISIBLE else LinearLayout.GONE
             btnAdicionarConvidado.visibility = if (checked) Button.VISIBLE else Button.GONE
         }
 
-        // -----------------------------------------
-        // Botão ADD convidado
-        // -----------------------------------------
         btnAdicionarConvidado.setOnClickListener { adicionarConvidado() }
 
-        // -----------------------------------------
-        // Adicionar imagem
-        // -----------------------------------------
         layoutAdicionarImagem.setOnClickListener { selecionarImagem() }
 
-        // -----------------------------------------
-        // Criar evento
-        // -----------------------------------------
         btnCriarEvento.setOnClickListener { salvarEvento() }
     }
 
-
-    // 🔹 Escolher imagem
     private fun selecionarImagem() {
         val intent = android.content.Intent(android.content.Intent.ACTION_PICK)
         intent.type = "image/*"
         startActivityForResult(intent, REQUEST_IMAGEM)
     }
 
-    // 🔹 Receber resultado imagem
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-
         if (requestCode == REQUEST_IMAGEM && resultCode == RESULT_OK) {
             imagemUri = data?.data
             ivImagemEvento.setImageURI(imagemUri)
@@ -120,14 +83,12 @@ class FormularioEventosActivity : AppCompatActivity() {
         }
     }
 
-    // 🔹 Abrir Date + Time Picker
     private fun abrirDateTimePicker() {
         val calendario = Calendar.getInstance()
-
-        DatePickerDialog(
+        android.app.DatePickerDialog(
             this,
             { _, ano, mes, dia ->
-                TimePickerDialog(
+                android.app.TimePickerDialog(
                     this,
                     { _, hora, minuto ->
                         etDataHora.setText(
@@ -145,23 +106,23 @@ class FormularioEventosActivity : AppCompatActivity() {
         ).show()
     }
 
-    // 🔹 Adicionar campo convidado dinamicamente
     private fun adicionarConvidado() {
-        val inflater = LayoutInflater.from(this)
-        val card = inflater.inflate(R.layout.item_convidado_template, containerConvidados, false)
+        val template = findViewById<CardView>(R.id.cardConvidadoTemplate)
+        val novoCard = LayoutInflater.from(this).inflate(template.id, containerConvidados, false)
 
-        val numero = containerConvidados.childCount + 1
-        card.findViewById<TextView>(R.id.tvConvidadoNumero).text = "Convidado $numero"
+        // Atualizar número do convidado
+        val tvNumero = novoCard.findViewById<TextView>(R.id.tvConvidadoNumero)
+        tvNumero.text = "Convidado ${containerConvidados.childCount + 1}"
 
-        val btnRemover = card.findViewById<ImageButton>(R.id.btnRemoverConvidado)
+        // Botão remover
+        val btnRemover = novoCard.findViewById<ImageButton>(R.id.btnRemoverConvidado)
         btnRemover.setOnClickListener {
-            containerConvidados.removeView(card)
+            containerConvidados.removeView(novoCard)
         }
 
-        containerConvidados.addView(card)
+        containerConvidados.addView(novoCard)
     }
 
-    // 🔹 Salvar evento no Supabase
     private fun salvarEvento() {
         val nome = etNome.text.toString().trim()
         val tipo = spinnerTipo.selectedItem.toString()
@@ -169,71 +130,65 @@ class FormularioEventosActivity : AppCompatActivity() {
         val dataHora = etDataHora.text.toString().trim()
 
         if (nome.isEmpty() || local.isEmpty() || dataHora.isEmpty()) {
-            Snackbar.make(btnCriarEvento, "Preencha todos os campos obrigatórios!", Snackbar.LENGTH_LONG).show()
+            Toast.makeText(this, "Preencha todos os campos obrigatórios!", Toast.LENGTH_SHORT).show()
             return
         }
 
-        Thread {
+        btnCriarEvento.isEnabled = false
+
+        lifecycleScope.launch {
             try {
-                // -----------------------------------------
-                // UPLOAD DE IMAGEM
-                // -----------------------------------------
+                // Upload de imagem (opcional)
                 var urlImagem: String? = null
-
                 if (imagemUri != null) {
-                    val bucket = supabase.storage.from("eventos")
-
-                    val nomeArquivo = "${UUID.randomUUID()}.jpg"
-                    val input = contentResolver.openInputStream(imagemUri!!)!!
-
-                    bucket.upload(nomeArquivo, input, upsert = true)
-
-                    val publicUrl = bucket.publicUrl(nomeArquivo)
-                    urlImagem = publicUrl
+                    // Aqui você precisa criar uma função no SupabaseApi para upload via Retrofit
+                    // ou usar o SDK do Kotlin se disponível
                 }
 
-                // -----------------------------------------
-                // INSERIR EVENTO NA TABELA
-                // -----------------------------------------
-                val response = supabase.postgrest["eventos"].insert(
-                    mapOf(
-                        "nome" to nome,
-                        "tipo" to tipo,
-                        "local" to local,
-                        "data_hora" to dataHora,
-                        "imagem" to urlImagem
-                    )
+                // Criar objeto evento
+                val evento = EventoInsert(nome = nome, tipo = tipo, local = local, data_hora = dataHora, imagem = urlImagem)
+
+                // Inserir evento via Retrofit
+                val response = SupabaseClient.api.registrarEvento(
+                    novoEvento = evento,
+                    apiKey = SupabaseConfig.SUPABASE_KEY,
+                    bearer = "Bearer ${SupabaseConfig.SUPABASE_KEY}"
                 )
 
-                val eventoId = response.body()?.jsonObject?.get("id")?.toString()?.toInt()
+                if (response.isSuccessful) {
+                    val eventoCriado = response.body()?.firstOrNull()
+                    val eventoId = eventoCriado?.id
 
-                // Convidados
-                if (checkboxConvidados.isChecked && eventoId != null) {
-                    for (i in 0 until containerConvidados.childCount) {
-                        val card = containerConvidados.getChildAt(i)
-                        val nomeConv = card.findViewById<EditText>(R.id.etNomeConvidado).text.toString()
-                        val descConv = card.findViewById<EditText>(R.id.etDescricaoConvidado).text.toString()
-
-                        supabase.postgrest["convidados"].insert(
-                            mapOf(
-                                "evento_id" to eventoId,
-                                "nome" to nomeConv,
-                                "descricao" to descConv
+                    if (checkboxConvidados.isChecked && eventoId != null) {
+                        for (i in 0 until containerConvidados.childCount) {
+                            val card = containerConvidados.getChildAt(i) as CardView
+                            val linear = card.getChildAt(0) as LinearLayout
+                            val etNomeConv = linear.findViewById<EditText>(R.id.etNomeConvidado)
+                            val etDescConv = linear.findViewById<EditText>(R.id.etDescricaoConvidado)
+                            val convidado = ConvidadoInsert(
+                                evento_id = eventoId,
+                                nome = etNomeConv.text.toString(),
+                                descricao = etDescConv.text.toString()
                             )
-                        )
+                            SupabaseClient.api.registrarConvidado(
+                                novoConvidado = convidado,
+                                apiKey = SupabaseConfig.SUPABASE_KEY,
+                                bearer = "Bearer ${SupabaseConfig.SUPABASE_KEY}"
+                            )
+                        }
                     }
-                }
 
-                runOnUiThread {
-                    Snackbar.make(btnCriarEvento, "Evento criado com sucesso!", Snackbar.LENGTH_LONG).show()
+                    Toast.makeText(this@FormularioEventosActivity, "Evento criado com sucesso!", Toast.LENGTH_LONG).show()
                     finish()
+                } else {
+                    Toast.makeText(this@FormularioEventosActivity, "Erro ao criar evento: ${response.code()}", Toast.LENGTH_SHORT).show()
                 }
 
             } catch (e: Exception) {
-                runOnUiThread {
-                    Snackbar.make(btnCriarEvento, "Erro ao criar evento: ${e.message}", Snackbar.LENGTH_LONG).show()
-                }
+                Toast.makeText(this@FormularioEventosActivity, "Falha: ${e.message}", Toast.LENGTH_LONG).show()
+            } finally {
+                btnCriarEvento.isEnabled = true
             }
-        }.start()
+        }
     }
 }

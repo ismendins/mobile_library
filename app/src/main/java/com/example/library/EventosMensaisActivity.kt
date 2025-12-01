@@ -1,86 +1,108 @@
 package com.example.library
 
-import EventosAdapter
+
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
+import android.widget.CalendarView
 import android.widget.ImageButton
-import android.widget.LinearLayout
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import io.github.jan.supabase.postgrest.postgrest
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import com.example.library.data.supabase.SupabaseClient
+import com.example.library.data.supabase.SupabaseConfig
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 import java.util.Collections.emptyList
 
-class EventosActivity : AppCompatActivity() {
+class EventosMensaisActivity : AppCompatActivity() {
 
     private lateinit var btnVoltar: ImageButton
     private lateinit var btnAddEvento: ImageButton
-    private lateinit var containerDiasMes: LinearLayout
-    private lateinit var recyclerEventosDia: RecyclerView
+    private lateinit var calendarView: CalendarView
+    private lateinit var recyclerEventosMes: RecyclerView
     private lateinit var adapter: EventosAdapter
 
-    private val client = SupabaseConfig.client
     private var dataSelecionada: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_eventos_mensais)
 
+        // Inicializar views
         btnVoltar = findViewById(R.id.botao_voltar)
         btnAddEvento = findViewById(R.id.botaoAddEvento)
-        containerDiasMes = findViewById(R.id.containerDiasMes)
-        recyclerEventosDia = findViewById(R.id.recyclerEventosDia)
+        calendarView = findViewById(R.id.calendarView)
+        recyclerEventosMes = findViewById(R.id.recyclerEventosMes)
 
-        recyclerEventosDia.layoutManager = LinearLayoutManager(this)
+        // RecyclerView
+        recyclerEventosMes.layoutManager = LinearLayoutManager(this)
+        adapter = EventosAdapter(emptyList<Evento>())
         adapter = EventosAdapter(emptyList())
-        recyclerEventosDia.adapter = adapter
+        recyclerEventosMes.adapter = adapter
 
+        // Configura ações dos botões
         configurarAcoes()
-        carregarDiasDoMes()
+
+        // Controla acesso ao botão de adicionar eventos
+        val isAdmin = SessionManager.isAdmin(this)
+        btnAddEvento.isEnabled = isAdmin
+        btnAddEvento.visibility = if (isAdmin) View.VISIBLE else View.GONE
+
+        // Data inicial (hoje)
+        val hoje = Calendar.getInstance().time
+        val formato = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        dataSelecionada = formato.format(hoje)
+        carregarEventosDoDia(dataSelecionada)
+
+        // Listener do CalendarView
+        calendarView.setOnDateChangeListener { _, ano, mes, dia ->
+            val mesFormat = (mes + 1).toString().padStart(2, '0')
+            val diaFormat = dia.toString().padStart(2, '0')
+            dataSelecionada = "$ano-$mesFormat-$diaFormat"
+            carregarEventosDoDia(dataSelecionada)
+        }
     }
 
     private fun configurarAcoes() {
-        btnVoltar.setOnClickListener { finish() }
+        btnVoltar.setOnClickListener {
+            startActivity(Intent(this, MenuInicialActivity::class.java))
+        }
 
         btnAddEvento.setOnClickListener {
             startActivity(Intent(this, FormularioEventosActivity::class.java))
         }
     }
 
-    private fun carregarDiasDoMes() {
-        val mesAtual = "2025-11"
-
-        for (dia in 1..30) {
-            val tv = TextView(this).apply {
-                text = dia.toString()
-                textSize = 16f
-                setPadding(24, 12, 24, 12)
-
-                setOnClickListener {
-                    dataSelecionada = "$mesAtual-${dia.toString().padStart(2, '0')}"
-                    carregarEventosDoDia(dataSelecionada)
-                }
-            }
-
-            containerDiasMes.addView(tv)
-        }
-    }
-
     private fun carregarEventosDoDia(data: String) {
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch {
+            try {
+                val response = SupabaseClient.api.listarEventos(
+                    dataFilter = data,
+                    apiKey = SupabaseConfig.SUPABASE_KEY,
+                    bearer = "Bearer ${SupabaseConfig.SUPABASE_KEY}"
+                )
 
-            val lista = client.postgrest["eventos"]
-                .select {
-                    filter {
-                        eq("data", data)
-                    }
-                }.decodeList<Evento>()
+                if (response.isSuccessful) {
+                    val lista: List<Evento> = response.body() ?: emptyList()
+                    adapter.atualizarLista(lista)
+                } else {
+                    Toast.makeText(
+                        this@EventosMensaisActivity,
+                        "Erro ao carregar eventos: ${response.code()}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
 
-            runOnUiThread {
-                adapter.atualizarLista(lista)
+            } catch (e: Exception) {
+                Toast.makeText(
+                    this@EventosMensaisActivity,
+                    "Falha na conexão: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
             }
         }
     }
