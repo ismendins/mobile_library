@@ -1,4 +1,4 @@
-plugins {
+    plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
@@ -69,8 +69,12 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.google.code.gson:gson:2.11.0")
 
-    // 🔥 Biblioteca CORRETA do Gemini
     implementation("com.google.ai.client.generativeai:generativeai:0.7.0")
+
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
