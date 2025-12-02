@@ -70,7 +70,7 @@ class MenuInicialActivity : AppCompatActivity() {
         }
 
         tvCalendario.setOnClickListener {
-            // ir para tela de eventos, se quiser no futuro
+            startActivity(Intent(this, EventosMensaisActivity::class.java))
         }
 
         fun closeDrawer() = drawerLayout.closeDrawer(GravityCompat.START)
