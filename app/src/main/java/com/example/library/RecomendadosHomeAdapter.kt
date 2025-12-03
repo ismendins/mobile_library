@@ -1,6 +1,7 @@
 package com.example.library
 
 import android.net.Uri
+import com.bumptech.glide.Glide
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -8,8 +9,8 @@ import android.widget.ImageView
 import androidx.recyclerview.widget.RecyclerView
 
 class RecomendadosHomeAdapter(
-    private val lista: List<Book>,
-    private val onItemClick: (Int) -> Unit
+    private val lista: List<Livro>,
+    private val onItemClick: (Livro) -> Unit
 ) : RecyclerView.Adapter<RecomendadosHomeAdapter.RecomendadoViewHolder>() {
 
     inner class RecomendadoViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -19,7 +20,7 @@ class RecomendadosHomeAdapter(
             view.setOnClickListener {
                 val pos = bindingAdapterPosition
                 if (pos != RecyclerView.NO_POSITION) {
-                    onItemClick(pos)
+                    onItemClick(lista[pos])
                 }
             }
         }
@@ -34,8 +35,11 @@ class RecomendadosHomeAdapter(
     override fun onBindViewHolder(holder: RecomendadoViewHolder, position: Int) {
         val livro = lista[position]
 
-        if (!livro.coverUri.isNullOrEmpty()) {
-            holder.capa.setImageURI(Uri.parse(livro.coverUri))
+        if (!livro.capaUrl.isNullOrEmpty()) {
+            Glide.with(holder.capa.context)
+                .load(livro.capaUrl)
+                .placeholder(R.drawable.ic_book_placeholder)
+                .into(holder.capa)
         } else {
             holder.capa.setImageResource(R.drawable.ic_book_placeholder)
         }

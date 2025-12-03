@@ -1,4 +1,4 @@
-package com.example.library.data.supabase
+package com.example.library
 
 object SupabaseConfig {
     const val SUPABASE_URL = "https://iuzlnadvrkhmcmhedejt.supabase.co"

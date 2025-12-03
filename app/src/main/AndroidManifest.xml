@@ -43,6 +43,9 @@
 
         <activity android:name=".AcessibilidadeActivity" />
         <activity android:name=".RegistrarLivroActivity" />
+        <activity android:name=".AdminActivity" />
+        <activity android:name=".CabinesActivity" />
+        <activity android:name=".EventosActivity" />
         <activity android:name=".EditarLivroActivity" />
 
         <activity
@@ -55,7 +58,7 @@
         </activity>
 
         <activity
-            android:name=".PesquisaActivity"
+            android:name=".PesquisaLivroActivity"
             android:exported="false"
             android:parentActivityName=".MenuInicialActivity">
             <meta-data
@@ -66,10 +69,10 @@
         <activity
             android:name=".ResultadoPesquisaActivity"
             android:exported="false"
-            android:parentActivityName=".PesquisaActivity">
+            android:parentActivityName=".PesquisaLivroActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value=".PesquisaActivity" />
+                android:value=".PesquisaLivroActivity" />
         </activity>
 
         <activity

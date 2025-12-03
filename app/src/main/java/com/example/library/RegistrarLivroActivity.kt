@@ -5,12 +5,14 @@ import android.os.Bundle
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import org.json.JSONArray
-import org.json.JSONObject
-import java.io.File
-import java.io.FileOutputStream
+import androidx.lifecycle.lifecycleScope
+import com.example.library.SupabaseClient
+import com.example.library.SupabaseConfig
+import kotlinx.coroutines.launch
 
 class RegistrarLivroActivity : AppCompatActivity() {
+
+    private val supabaseApi = SupabaseClient.api
 
     private var capaUriSelecionada: Uri? = null
     private lateinit var imgPreview: ImageView
@@ -27,6 +29,13 @@ class RegistrarLivroActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        if (!SessionManager.isAdmin(this)) {
+            Toast.makeText(this, "Acesso negado. Apenas administradores podem registrar livros.", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+
         setContentView(R.layout.activity_registrar_livro)
 
         val inputTitulo = findViewById<EditText>(R.id.inputTitulo)
@@ -55,49 +64,46 @@ class RegistrarLivroActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            val caminhoLocal = capaUriSelecionada?.let { salvarImagemLocal(it) }
+            lifecycleScope.launch {
+                try {
+                    btnRegistrar.isEnabled = false
 
-            val prefs = getSharedPreferences("books_db", MODE_PRIVATE)
-            val arr = JSONArray(prefs.getString("books_list", "[]"))
+                    // Simulação de upload de imagem para o Supabase Storage
+                    val capaUrl = capaUriSelecionada?.let { uploadCapa(it) } ?: ""
 
-            val novoObj = JSONObject()
-            novoObj.put("title", titulo)
-            novoObj.put("author", autor)
-            novoObj.put("language", idioma)
-            novoObj.put("coverUri", caminhoLocal ?: JSONObject.NULL)
+                    val novoLivro = Livro(
+                        titulo = titulo,
+                        autores = autor,
+                        idiomas = idioma,
+                        capaUrl = capaUrl
+                    )
 
-            arr.put(novoObj)
-            prefs.edit().putString("books_list", arr.toString()).apply()
+                    val response = supabaseApi.registrarLivro(
+                        novoLivro,
+                        apiKey = SupabaseConfig.SUPABASE_KEY,
+                        bearer = "Bearer ${SupabaseConfig.SUPABASE_KEY}"
+                    )
 
-            LivroRepository.livros.add(
-                Book(titulo, autor, idioma, caminhoLocal)
-            )
-
-            Toast.makeText(this, "Livro registrado!", Toast.LENGTH_SHORT).show()
-            finish()
+                    if (response.isSuccessful) {
+                        Toast.makeText(this@RegistrarLivroActivity, "Livro registrado com sucesso!", Toast.LENGTH_SHORT).show()
+                        finish()
+                    } else {
+                        Toast.makeText(this@RegistrarLivroActivity, "Erro ao registrar livro: ${response.errorBody()?.string()}", Toast.LENGTH_LONG).show()
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(this@RegistrarLivroActivity, "Erro de conexão: ${e.message}", Toast.LENGTH_LONG).show()
+                } finally {
+                    btnRegistrar.isEnabled = true
+                }
+            }
         }
     }
 
-    private fun salvarImagemLocal(uri: Uri): String? {
-        return try {
-            val input = contentResolver.openInputStream(uri) ?: return null
-
-            val dir = File(filesDir, "book_covers")
-            if (!dir.exists()) dir.mkdirs()
-
-            val nomeArquivo = "capa_${System.currentTimeMillis()}.png"
-            val arquivoDestino = File(dir, nomeArquivo)
-
-            val output = FileOutputStream(arquivoDestino)
-            input.copyTo(output)
-
-            input.close()
-            output.close()
-
-            arquivoDestino.absolutePath
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
+    // Função placeholder para simular o upload para o Supabase Storage
+    private fun uploadCapa(uri: Uri): String {
+        // Em um projeto real, aqui você faria o upload para o Supabase Storage
+        // e retornaria a URL pública.
+        // Como não temos acesso ao Supabase Storage, retornamos uma URL de placeholder.
+        return "https://placehold.co/400x600?text=Capa+Livro"
     }
 }
