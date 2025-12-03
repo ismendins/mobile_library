@@ -1,4 +1,4 @@
-package com.example.library.data.supabase
+    package com.example.library.data.supabase
 
 import com.example.library.AprovacaoEmprestimo
 import com.example.library.Convidado
@@ -8,42 +8,54 @@ import retrofit2.Call
 import retrofit2.Response
 import retrofit2.http.*
 
-interface SupabaseApi {
+    interface SupabaseApi {
 
-    // LOGIN = SELECT com filtros
-    @GET("usuarios")
-    suspend fun login(
-        @Query("select")
-        select: String = "id,nome_completo,email,matricula,total_lidos,tipo_usuario",
+        @GET("usuarios")
+        suspend fun loginUsuario(
+            @Query("matricula") matriculaFilter: String,
+            @Query("senha_hash") senhaFilter: String,
+            @Query("select") select: String = "id,nome_completo,email,matricula,tipo_usuario",
+            @Query("limit") limit: Int = 1,
 
-        @Query("matricula")
-        matriculaFilter: String,       // eq.2025001
+            @Header("apikey") apiKey: String,
+            @Header("Authorization") bearer: String
+        ): Response<List<Usuario>>
 
-        @Query("senha_hash")
-        senhaHashFilter: String,       // eq.algumaCoisa
 
-        @Query("limit")
-        limit: Int = 1,
+        @GET("usuarios")
+        suspend fun login(
+            @Query("select")
+            select: String = "id,nome_completo,email,matricula,total_lidos,tipo_usuario",
 
-        @Header("apikey")
-        apiKey: String,
+            @Query("matricula")
+            matriculaFilter: String,
 
-        @Header("Authorization")
-        bearer: String
-    ): Response<List<Usuario>>
+            @Query("senha_hash")
+            senhaHashFilter: String,
 
-    // REGISTRO = INSERT
-    @Headers("Prefer: return=representation")
-    @POST("usuarios")
-    suspend fun registrar(
-        @Body novoUsuario: UsuarioInsert,
+            @Query("limit")
+            limit: Int = 1,
 
-        @Header("apikey")
-        apiKey: String,
+            @Header("apikey")
+            apiKey: String,
 
-        @Header("Authorization")
-        bearer: String
-    ): Response<List<Usuario>>
+            @Header("Authorization")
+            bearer: String
+        ): Response<List<Usuario>>
+
+        @Headers("Prefer: return=representation")
+
+
+        @POST("usuarios")
+        suspend fun registrar(
+            @Body novoUsuario: UsuarioInsert,
+
+            @Header("apikey")
+            apiKey: String,
+
+            @Header("Authorization")
+            bearer: String
+        ): Response<List<Usuario>>
 
     @Headers("Prefer: return=representation")
     @POST("eventos")
@@ -53,8 +65,6 @@ interface SupabaseApi {
         @Header("Authorization") bearer: String
     ): Response<List<Evento>>
 
-
-    // Inserir convidado
     @Headers("Prefer: return=representation")
     @POST("convidados")
     suspend fun registrarConvidado(
@@ -65,17 +75,14 @@ interface SupabaseApi {
 
     @GET("eventos")
     suspend fun listarEventos(
-        // CORREÇÃO: Unifique os filtros de data em um único parâmetro.
-        // O Retrofit vai montar a URL assim: /eventos?data_hora=gte.2025...,lt.2025...
         @Query("data_hora::text") dataFiltro: String,
-        @Query("select") select: String = "*", // Boa prática: especificar colunas
+        @Query("select") select: String = "*",
         @Header("apikey") apiKey: String,
         @Header("Authorization") bearer: String
     ): Response<List<Evento>>
 
 data class RpcDataFiltro(val data_filtro: String)
 
-    // ADICIONE A NOVA FUNÇÃO PARA CHAMAR O RPC
     @POST("rpc/buscar_eventos_por_data")
     suspend fun buscarEventosPorData(
         @Body body: RpcDataFiltro,
@@ -85,7 +92,7 @@ data class RpcDataFiltro(val data_filtro: String)
 
     @DELETE("eventos")
     suspend fun deletarEvento(
-        @Query("id") idFiltro: String, // ex: "eq.123"
+        @Query("id") idFiltro: String,
         @Header("apikey") apiKey: String,
         @Header("Authorization") bearer: String
     ): Response<Unit>
@@ -99,9 +106,9 @@ data class RpcDataFiltro(val data_filtro: String)
         @Header("Authorization") bearer: String
     ): Response<List<Evento>>
 
-    @GET("convidados_eventos") // Nome da sua tabela de convidados
+    @GET("convidados_eventos")
     suspend fun buscarConvidadosPorEvento(
-        @Query("evento_id") idEventoFiltro: String, // ex: "eq.123"
+        @Query("evento_id") idEventoFiltro: String,
         @Query("select") select: String = "*",
         @Header("apikey") apiKey: String,
         @Header("Authorization") bearer: String

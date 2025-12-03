@@ -17,12 +17,14 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // 🔥 ADICIONAR ESTA PARTE:
-        val geminiApiKey = project.findProperty("GEMINI_API_KEY") as String? ?: ""
+        // Lê a chave do local.properties
+        val geminiKey = project.findProperty("GEMINI_API_KEY")?.toString() ?: ""
+
+// Envia para o BuildConfig
         buildConfigField(
             "String",
             "GEMINI_API_KEY",
-            "\"$geminiApiKey\""
+            "\"$geminiKey\""
         )
     }
 
