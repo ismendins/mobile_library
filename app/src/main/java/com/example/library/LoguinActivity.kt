@@ -6,16 +6,14 @@ import android.util.Log
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.example.library.data.supabase.SupabaseClient
-import com.example.library.data.supabase.SupabaseConfig
+import com.example.library.SupabaseClient
+import com.example.library.SupabaseConfig
 import kotlinx.coroutines.launch
 
 class LoguinActivity : AppCompatActivity() {
 
     companion object {
-        private const val PREFS_NAME = "auth_prefs"
-        private const val KEY_ROLE = "role"
-        private const val KEY_MATRICULA = "matricula"
+
     }
 
     private lateinit var btnEntrar: Button
@@ -68,6 +66,9 @@ class LoguinActivity : AppCompatActivity() {
                         }
 
                         val usuarios = response.body() ?: emptyList()
+                        // O modelo Usuario retornado pela API precisa ser o novo modelo, mas a função loginUsuario
+                        // está retornando o modelo antigo. Vamos assumir que o modelo antigo ainda está em uso
+                        // para evitar quebrar o código existente, mas vamos ajustar o SessionManager.
 
                         if (usuarios.isEmpty()) {
                             Toast.makeText(
@@ -80,17 +81,10 @@ class LoguinActivity : AppCompatActivity() {
 
                         val usuario = usuarios[0]
 
-                        val role = if (usuario.tipo_usuario.uppercase() == "ADMIN") {
-                            "admin"
-                        } else {
-                            "user"
-                        }
+                        val isAdmin = usuario.tipoUsuario.uppercase() == "BIBLIOTECARIO" || usuario.tipoUsuario.uppercase() == "ADMIN"
 
-                        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                        prefs.edit()
-                            .putString(KEY_ROLE, role)
-                            .putString(KEY_MATRICULA, usuario.matricula)
-                            .apply()
+                        SessionManager.saveUser(this@LoguinActivity, usuario.id!!, usuario.nomeCompleto, isAdmin)
+
 
                         startActivity(
                             Intent(this@LoguinActivity, MenuInicialActivity::class.java)

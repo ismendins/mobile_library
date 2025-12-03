@@ -5,8 +5,8 @@ import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.example.library.data.supabase.SupabaseClient
-import com.example.library.data.supabase.SupabaseConfig
+import com.example.library.SupabaseClient
+import com.example.library.SupabaseConfig
 import com.example.library.data.supabase.UsuarioInsert
 import kotlinx.coroutines.launch
 import android.content.Intent
@@ -103,7 +103,7 @@ class RegisterActivity : AppCompatActivity() {
                         val usuario = usuarios[0]
                         Toast.makeText(
                             this@RegisterActivity,
-                            "Usuário cadastrado: ${usuario.nome_completo}",
+                            "Usuário cadastrado: ${usuario.nomeCompleto}",
                             Toast.LENGTH_SHORT
                         ).show()
                         finish()

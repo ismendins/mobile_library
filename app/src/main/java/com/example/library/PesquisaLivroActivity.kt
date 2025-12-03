@@ -7,13 +7,18 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import org.json.JSONArray
+import androidx.lifecycle.lifecycleScope
+import com.example.library.SupabaseClient
+import com.example.library.SupabaseConfig
+import kotlinx.coroutines.launch
 
-class PesquisaActivity : AppCompatActivity() {
+class PesquisaLivroActivity : AppCompatActivity() {
+
+    private val supabaseApi = SupabaseClient.api
 
     private lateinit var recyclerLivros: RecyclerView
-    private lateinit var adapter: BookAdapter
-    private val listaLivros = mutableListOf<Book>()
+    private lateinit var adapter: LivroAdapter
+    private val listaLivros = mutableListOf<Livro>()
 
     private var isAdmin = false
 
@@ -31,9 +36,7 @@ class PesquisaActivity : AppCompatActivity() {
         recyclerLivros = findViewById(R.id.recyclerLivros)
         recyclerLivros.layoutManager = LinearLayoutManager(this)
 
-        val prefs = getSharedPreferences("auth_prefs", MODE_PRIVATE)
-        val role = prefs.getString("role", "user")
-        isAdmin = (role == "admin")
+        isAdmin = SessionManager.isAdmin(this)
 
         adminCrudContainer.visibility = if (isAdmin) View.VISIBLE else View.GONE
 
@@ -53,29 +56,36 @@ class PesquisaActivity : AppCompatActivity() {
         btnSearch.setOnClickListener {
             val texto = txtPesquisa.text.toString().trim()
             if (texto.isNotEmpty()) {
-                val intent = Intent(this, ResultadoPesquisaActivity::class.java)
-                intent.putExtra("TERMO_PESQUISA", texto)
-                startActivity(intent)
+                // Implementar a busca no Supabase aqui
+                // Por enquanto, vamos manter a lista completa e filtrar localmente
+                // A busca real deve ser feita na função carregarLivros com filtro
+                carregarLivros(texto)
             } else {
+                carregarLivros()
                 Toast.makeText(this, "Digite algo para buscar", Toast.LENGTH_SHORT).show()
             }
         }
 
-        adapter = BookAdapter(
+        adapter = LivroAdapter(
             listaLivros,
             isAdmin = isAdmin,
-            onEdit = { livro, index ->
+            onItemClick = { livro ->
+                val intent = Intent(this, TelaLivroDetalheActivity::class.java)
+                intent.putExtra("LIVRO_ID", livro.id)
+                startActivity(intent)
+            },
+            onEdit = { livro ->
                 if (isAdmin) {
                     val intent = Intent(this, EditarLivroActivity::class.java)
-                    intent.putExtra("index", index)
+                    intent.putExtra("LIVRO_ID", livro.id)
                     startActivity(intent)
                 } else {
                     Toast.makeText(this, "Somente administradores podem editar livros.", Toast.LENGTH_SHORT).show()
                 }
             },
-            onDelete = { index ->
+            onDelete = { livro ->
                 if (isAdmin) {
-                    excluirLivro(index)
+                    excluirLivro(livro)
                 } else {
                     Toast.makeText(this, "Somente administradores podem excluir livros.", Toast.LENGTH_SHORT).show()
                 }
@@ -90,42 +100,66 @@ class PesquisaActivity : AppCompatActivity() {
         carregarLivros()
     }
 
-    private fun carregarLivros() {
-        listaLivros.clear()
+    private fun carregarLivros(termoBusca: String? = null) {
+        lifecycleScope.launch {
+            try {
+                val response = if (termoBusca.isNullOrEmpty()) {
+                    supabaseApi.getLivros(
+                        apiKey = SupabaseConfig.SUPABASE_KEY,
+                        bearer = "Bearer ${SupabaseConfig.SUPABASE_KEY}"
+                    )
+                } else {
+                    // Busca por título ou autor
+                    supabaseApi.searchLivros(
+                        termoBusca = "titulo.ilike.*$termoBusca*,autores.ilike.*$termoBusca*",
+                        apiKey = SupabaseConfig.SUPABASE_KEY,
+                        bearer = "Bearer ${SupabaseConfig.SUPABASE_KEY}"
+                    )
+                }
 
-        val prefs = getSharedPreferences("books_db", MODE_PRIVATE)
-        val json = prefs.getString("books_list", "[]")
-        val arr = JSONArray(json)
-
-        for (i in 0 until arr.length()) {
-            val obj = arr.getJSONObject(i)
-            listaLivros.add(
-                Book(
-                    title = obj.getString("title"),
-                    author = obj.getString("author"),
-                    language = obj.getString("language"),
-                    coverUri = if (obj.has("coverUri")) obj.getString("coverUri") else null
-                )
-            )
+                if (response.isSuccessful && response.body() != null) {
+                    listaLivros.clear()
+                    listaLivros.addAll(response.body()!!)
+                    adapter.notifyDataSetChanged()
+                } else {
+                    Toast.makeText(this@PesquisaLivroActivity, "Erro ao carregar livros: ${response.errorBody()?.string()}", Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@PesquisaLivroActivity, "Erro de conexão: ${e.message}", Toast.LENGTH_LONG).show()
+            }
         }
-
-        adapter.notifyDataSetChanged()
     }
 
-    private fun excluirLivro(index: Int) {
-        val prefs = getSharedPreferences("books_db", MODE_PRIVATE)
-        val json = prefs.getString("books_list", "[]")
+    private fun excluirLivro(livro: Livro) {
+        lifecycleScope.launch {
+            try {
+                val response = supabaseApi.deletarLivro(
+                    idFilter = "eq.${livro.id}",                  // 🔹 nome e tipo certos
+                    apiKey = SupabaseConfig.SUPABASE_KEY,
+                    bearer = "Bearer ${SupabaseConfig.SUPABASE_KEY}"
+                )
 
-        val arr = JSONArray(json)
-        val newArr = JSONArray()
-
-        for (i in 0 until arr.length()) {
-            if (i != index) newArr.put(arr.getJSONObject(i))
+                if (response.isSuccessful) {
+                    Toast.makeText(
+                        this@PesquisaLivroActivity,
+                        "Livro excluído com sucesso!",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    carregarLivros() // Recarrega a lista
+                } else {
+                    Toast.makeText(
+                        this@PesquisaLivroActivity,
+                        "Erro ao excluir livro: ${response.errorBody()?.string()}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(
+                    this@PesquisaLivroActivity,
+                    "Erro de conexão: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
         }
-
-        prefs.edit().putString("books_list", newArr.toString()).apply()
-
-        carregarLivros()
-        Toast.makeText(this, "Livro excluído!", Toast.LENGTH_SHORT).show()
     }
 }

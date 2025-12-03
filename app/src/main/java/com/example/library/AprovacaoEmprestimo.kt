@@ -1,24 +1,14 @@
 package com.example.library
 
-import com.example.library.data.supabase.Usuario
 import com.google.gson.annotations.SerializedName
-import java.time.LocalDate
-import java.time.LocalDateTime
 
 data class AprovacaoEmprestimo(
-    val id: Long? = null,
-    val usuario_id: Long,
-    val livro_id: Long,
-
-    @SerializedName("usuarios")
-    val usuario: Usuario,
-
-    @SerializedName("livros")
-    val livro: Book,
-
-    val data_solicitacao: String? = null, // vem como string ISO
-    val data_inicio: String,
-    val data_fim: String,
-    val status: String = "Pendente",
-    val observacoes: String? = null
+    @SerializedName("id") val id: Int? = null,
+    @SerializedName("usuario_id") val usuarioId: Int,
+    @SerializedName("livro_id") val livroId: Int,
+    @SerializedName("data_solicitacao") val dataSolicitacao: String? = null,
+    @SerializedName("data_inicio") val dataInicio: String,
+    @SerializedName("data_fim") val dataFim: String,
+    @SerializedName("status") val status: String, // Ex: "pendente", "aprovado", "rejeitado"
+    @SerializedName("observacoes") val observacoes: String? = null
 )

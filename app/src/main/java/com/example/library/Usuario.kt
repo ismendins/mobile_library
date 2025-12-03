@@ -1,10 +1,14 @@
-package com.example.library.data.supabase
+package com.example.library
+
+import com.google.gson.annotations.SerializedName
 
 data class Usuario(
-    val id: Long,
-    val nome_completo: String,
-    val email: String,
-    val matricula: String,
-    val total_lidos: Int,
-    val tipo_usuario: String
+    @SerializedName("id") val id: Int? = null,
+    @SerializedName("nome_completo") val nomeCompleto: String,
+    @SerializedName("email") val email: String,
+    @SerializedName("matricula") val matricula: String,
+    @SerializedName("senha_hash") val senhaHash: String? = null, // Pode ser nulo se não for usado para retorno
+    @SerializedName("data_cadastro") val dataCadastro: String? = null,
+    @SerializedName("total_lidos") val totalLidos: Int? = 0,
+    @SerializedName("tipo_usuario") val tipoUsuario: String // Ex: "aluno", "bibliotecario"
 )

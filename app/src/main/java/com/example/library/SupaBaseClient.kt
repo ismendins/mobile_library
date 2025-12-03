@@ -1,4 +1,4 @@
-package com.example.library.data.supabase
+package com.example.library
 
 import com.example.library.SupabaseApi
 import okhttp3.OkHttpClient
