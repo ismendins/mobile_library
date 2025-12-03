@@ -1,7 +1,10 @@
 package com.example.library
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
 import android.widget.ImageButton
@@ -11,7 +14,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.example.library.data.supabase.SupabaseClient
@@ -26,7 +28,9 @@ class DetalhesEventoActivity : AppCompatActivity() {
     private lateinit var botaoVoltar: ImageButton
     private lateinit var btnEditar: Button
     private lateinit var btnExcluir: Button
-    private lateinit var layoutConvidados: LinearLayout
+    // ✅ Vamos usar as duas referências para controlar a visibilidade e o conteúdo
+    private lateinit var secaoConvidados: LinearLayout
+    private lateinit var containerConvidados: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,7 +45,9 @@ class DetalhesEventoActivity : AppCompatActivity() {
         val dataHora = findViewById<TextView>(R.id.tvDataHora)
         val local = findViewById<TextView>(R.id.tvLocalEvento)
         val imagem = findViewById<ImageView>(R.id.ivImagemEvento)
-        layoutConvidados = findViewById(R.id.container_secao_convidados)
+
+        secaoConvidados = findViewById(R.id.layout_secao_convidados)
+        containerConvidados = findViewById(R.id.container_secao_convidados)
 
         eventoId = intent.getLongExtra("EVENTO_ID", -1L)
         val nomeEvento = intent.getStringExtra("EVENTO_NOME")
@@ -74,152 +80,116 @@ class DetalhesEventoActivity : AppCompatActivity() {
         }
 
         configurarPermissoesAdmin()
+        configurarListeners()
+    }
 
+    private fun configurarListeners() {
         botaoVoltar.setOnClickListener {
             finish()
         }
 
         btnEditar.setOnClickListener {
             val intent = Intent(this, FormularioEventosActivity::class.java).apply {
+                // ✅ CORREÇÃO: Usando as variáveis locais que já contêm os dados.
                 putExtra("EVENTO_ID", eventoId)
-                putExtra("EVENTO_NOME", nomeEvento)
-                putExtra("EVENTO_TIPO", tipoEvento)
-                putExtra("EVENTO_LOCAL", localEvento)
-                putExtra("EVENTO_DATA_HORA", dataHoraString)
-                putExtra("EVENTO_IMAGEM_URL", imagemUrl)
+                putExtra("EVENTO_NOME", this@DetalhesEventoActivity.intent.getStringExtra("EVENTO_NOME"))
+                putExtra("EVENTO_TIPO", this@DetalhesEventoActivity.intent.getStringExtra("EVENTO_TIPO"))
+                putExtra("EVENTO_LOCAL", this@DetalhesEventoActivity.intent.getStringExtra("EVENTO_LOCAL"))
+                putExtra("EVENTO_DATA_HORA", this@DetalhesEventoActivity.intent.getStringExtra("EVENTO_DATA_HORA"))
+                putExtra("EVENTO_IMAGEM_URL", this@DetalhesEventoActivity.intent.getStringExtra("EVENTO_IMAGEM_URL"))
             }
             startActivity(intent)
         }
 
         btnExcluir.setOnClickListener {
-            mostrarPopupExclusao()
+            mostrarPopupConfirmacaoExclusao()
         }
     }
 
+
+    private fun configurarPermissoesAdmin() {
+        val prefs = getSharedPreferences("auth_prefs", MODE_PRIVATE)
+        val role = prefs.getString("role", "user")
+        val isAdmin = (role == "admin")
+        btnEditar.visibility = if (isAdmin) View.VISIBLE else View.GONE
+        btnExcluir.visibility = if (isAdmin) View.VISIBLE else View.GONE
+    }
+
     private fun buscarEExibirConvidados(idDoEvento: Long) {
+        secaoConvidados.visibility = View.GONE
+        containerConvidados.removeAllViews() // Limpa convidados antigos
+
         lifecycleScope.launch {
             try {
                 val filtroId = "eq.$idDoEvento"
-
                 val response = SupabaseClient.api.buscarConvidadosPorEvento(
                     idEventoFiltro = filtroId,
                     apiKey = SupabaseConfig.SUPABASE_KEY,
                     bearer = "Bearer ${SupabaseConfig.SUPABASE_KEY}"
                 )
 
-
                 if (response.isSuccessful) {
                     val convidados = response.body() ?: emptyList()
-                    layoutConvidados.removeAllViews()
 
                     if (convidados.isNotEmpty()) {
-                        findViewById<LinearLayout>(R.id.container_secao_convidados).visibility = View.VISIBLE
+                        secaoConvidados.visibility = View.VISIBLE
                         convidados.forEach { convidado ->
                             adicionarViewConvidado(convidado.nome, convidado.descricao)
                         }
                     } else {
-                        findViewById<LinearLayout>(R.id.container_secao_convidados).visibility = View.GONE
+                        secaoConvidados.visibility = View.GONE
                     }
                 } else {
-                    Toast.makeText(this@DetalhesEventoActivity, "Erro ao buscar convidados: ${response.code()}", Toast.LENGTH_SHORT).show()
-                    findViewById<LinearLayout>(R.id.container_secao_convidados).visibility = View.GONE
+                    Log.e("DetalhesEvento", "Erro ao buscar convidados: ${response.code()} - ${response.errorBody()?.string()}")
+                    secaoConvidados.visibility = View.GONE
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@DetalhesEventoActivity, "Falha na conexão ao buscar convidados: ${e.message}", Toast.LENGTH_LONG).show()
-                findViewById<LinearLayout>(R.id.container_secao_convidados).visibility = View.GONE
+                Log.e("DetalhesEvento", "Falha na conexão ao buscar convidados", e)
+                secaoConvidados.visibility = View.GONE
             }
         }
     }
 
     private fun adicionarViewConvidado(nome: String, descricao: String) {
-        val nomeView = TextView(this).apply {
-            text = nome
-            textSize = 13f
-            setTextColor(ContextCompat.getColor(context, android.R.color.black))
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                marginStart = (8 * resources.displayMetrics.density).toInt() // 8dp
-            }
-        }
+        val inflater = LayoutInflater.from(this)
+        val convidadoView = inflater.inflate(R.layout.item_detalhe_convidado, containerConvidados, false)
 
-        val nomeLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = android.view.Gravity.CENTER_VERTICAL
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                bottomMargin = (12 * resources.displayMetrics.density).toInt() // 12dp
-            }
-            val iconView = ImageView(context).apply {
-                setImageResource(R.drawable.ic_pessoa)
-                layoutParams = LinearLayout.LayoutParams(
-                    (20 * resources.displayMetrics.density).toInt(),
-                    (20 * resources.displayMetrics.density).toInt()
-                )
-            }
-            addView(iconView)
-            addView(nomeView)
-        }
+        val nomeConvidado = convidadoView.findViewById<TextView>(R.id.tvNomeConvidado)
+        val descricaoConvidado = convidadoView.findViewById<TextView>(R.id.tvDescricaoConvidado)
 
-        val descricaoView = TextView(this).apply {
-            text = descricao
-            textSize = 12f
-            setTextColor(ContextCompat.getColor(context, R.color.black))
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                marginStart = (28 * resources.displayMetrics.density).toInt() // 28dp
-                bottomMargin = (12 * resources.displayMetrics.density).toInt() // Adiciona espaço após a descrição
-            }
-        }
+        nomeConvidado.text = nome
+        descricaoConvidado.text = descricao
 
-        // Adiciona as novas views ao container principal de convidados
-        layoutConvidados.addView(nomeLayout)
-        layoutConvidados.addView(descricaoView)
-    }
-    private fun configurarPermissoesAdmin() {
-        val prefs = getSharedPreferences("auth_prefs", MODE_PRIVATE)
-        val role = prefs.getString("role", "user")
-        val isAdmin = (role == "admin")
-
-        btnEditar.visibility = if (isAdmin) View.VISIBLE else View.GONE
-        btnExcluir.visibility = if (isAdmin) View.VISIBLE else View.GONE
+        containerConvidados.addView(convidadoView)
     }
 
-    private fun mostrarPopupExclusao() {
+    private fun mostrarPopupConfirmacaoExclusao() {
         AlertDialog.Builder(this)
             .setTitle("Excluir evento")
-            .setMessage("Tem certeza? Esta ação não pode ser desfeita.")
+            .setMessage("Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita.")
             .setPositiveButton("Excluir") { _, _ ->
-                deletarEvento()
+                deletarEventoDoBanco()
             }
-            .setNegativeButton("Cancelar", null) // Botão de retorno sem ação
+            .setNegativeButton("Cancelar", null)
             .show()
     }
 
-    private fun deletarEvento() {
-        if (eventoId == -1L) {
-            Toast.makeText(this, "ID do evento inválido.", Toast.LENGTH_SHORT).show()
-            return
-        }
-
+    private fun deletarEventoDoBanco() {
+        if (eventoId == -1L) return
         lifecycleScope.launch {
             try {
+                SupabaseClient.api.deletarConvidadosPorEvento(
+                    idEventoFiltro = "eq.$eventoId",
+                    apiKey = SupabaseConfig.SUPABASE_KEY,
+                    bearer = "Bearer ${SupabaseConfig.SUPABASE_KEY}"
+                )
                 val response = SupabaseClient.api.deletarEvento(
                     idFiltro = "eq.$eventoId",
                     apiKey = SupabaseConfig.SUPABASE_KEY,
                     bearer = "Bearer ${SupabaseConfig.SUPABASE_KEY}"
                 )
-
                 if (response.isSuccessful) {
-                    // --- 🔥 LÓGICA CORRIGIDA AQUI 🔥 ---
-                    // Exibe um pop-up de sucesso em vez de um Toast
-                    mostrarPopupSucesso()
+                    mostrarPopupSucessoExclusao()
                 } else {
                     Toast.makeText(this@DetalhesEventoActivity, "Erro ao excluir: ${response.code()}", Toast.LENGTH_SHORT).show()
                 }
@@ -229,18 +199,15 @@ class DetalhesEventoActivity : AppCompatActivity() {
         }
     }
 
-    private fun mostrarPopupSucesso() {
+    private fun mostrarPopupSucessoExclusao() {
         AlertDialog.Builder(this)
             .setTitle("Sucesso")
             .setMessage("O evento foi excluído com sucesso.")
             .setPositiveButton("Ok") { _, _ ->
-                // Ao clicar em "Ok", redireciona para a tela de calendário
-                val intent = Intent(this@DetalhesEventoActivity, EventosMensaisActivity::class.java)
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                startActivity(intent)
-                finish() // Fecha a tela de detalhes para não ficar na pilha
+                setResult(Activity.RESULT_OK)
+                finish()
             }
-            .setCancelable(false) // Impede que o usuário feche o pop-up clicando fora
+            .setCancelable(false)
             .show()
     }
 }

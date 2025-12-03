@@ -1,14 +1,16 @@
-    package com.example.library.data.supabase
+package com.example.library
 
-import com.example.library.AprovacaoEmprestimo
-import com.example.library.Convidado
-import com.example.library.Evento
-import com.example.library.EventoUpdate
+import com.example.library.data.supabase.ConvidadoInsert
+import com.example.library.data.supabase.EventoInsert
+import com.example.library.data.supabase.Usuario
+import com.example.library.data.supabase.UsuarioInsert
 import retrofit2.Call
 import retrofit2.Response
 import retrofit2.http.*
 
     interface SupabaseApi {
+        data class RpcMesFiltro(val ano_filtro: Int, val mes_filtro: Int)
+        data class RpcDataFiltro(val data_filtro: String)
 
         @GET("usuarios")
         suspend fun loginUsuario(
@@ -65,23 +67,20 @@ import retrofit2.http.*
         @Header("Authorization") bearer: String
     ): Response<List<Evento>>
 
-    @Headers("Prefer: return=representation")
-    @POST("convidados")
-    suspend fun registrarConvidado(
-        @Body novoConvidado: ConvidadoInsert,
-        @Header("apikey") apiKey: String,
-        @Header("Authorization") bearer: String
-    ): Response<List<Convidado>>
+        @Headers("Prefer: return=representation")
+        @POST("convidados_eventos")
+        suspend fun registrarConvidado(
+            @Body novoConvidado: ConvidadoInsert,
+            @Header("apikey") apiKey: String,
+            @Header("Authorization") bearer: String
+        ): Response<List<Convidado>>
 
-    @GET("eventos")
-    suspend fun listarEventos(
-        @Query("data_hora::text") dataFiltro: String,
-        @Query("select") select: String = "*",
-        @Header("apikey") apiKey: String,
-        @Header("Authorization") bearer: String
-    ): Response<List<Evento>>
-
-data class RpcDataFiltro(val data_filtro: String)
+        @POST("rpc/buscar_eventos_do_mes")
+        suspend fun buscarEventosDoMes(
+            @Body body: RpcMesFiltro,
+            @Header("apikey") apiKey: String,
+            @Header("Authorization") bearer: String
+        ): Response<List<Evento>>
 
     @POST("rpc/buscar_eventos_por_data")
     suspend fun buscarEventosPorData(
@@ -106,15 +105,24 @@ data class RpcDataFiltro(val data_filtro: String)
         @Header("Authorization") bearer: String
     ): Response<List<Evento>>
 
-    @GET("convidados_eventos")
-    suspend fun buscarConvidadosPorEvento(
-        @Query("evento_id") idEventoFiltro: String,
-        @Query("select") select: String = "*",
-        @Header("apikey") apiKey: String,
-        @Header("Authorization") bearer: String
-    ): Response<List<Convidado>>
+        @GET("convidados_eventos")
+        suspend fun buscarConvidadosPorEvento(
+            @Query("evento_id") idEventoFiltro: String,
+            @Query("select") select: String = "*",
+            @Header("apikey") apiKey: String,
+            @Header("Authorization") bearer: String
+        ): Response<List<Convidado>>
 
-    @GET("rest/v1/emprestimos?status=eq.Pendente&select=*,usuarios(*),livros(*)")
+        @DELETE("convidados_eventos")
+        suspend fun deletarConvidadosPorEvento(
+            @Query("evento_id") idEventoFiltro: String,
+            @Header("apikey") apiKey: String,
+            @Header("Authorization") bearer: String
+        ): Response<Unit>
+
+
+
+        @GET("rest/v1/emprestimos?status=eq.Pendente&select=*,usuarios(*),livros(*)")
     fun listarAprovacoes(
         @Header("apikey") apiKey: String,
         @Header("Authorization") bearer: String

@@ -70,6 +70,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.google.code.gson:gson:2.11.0")
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+
 
     implementation("com.google.ai.client.generativeai:generativeai:0.7.0")
     implementation("io.github.jan-tennert.supabase:storage-kt:2.4.0")
